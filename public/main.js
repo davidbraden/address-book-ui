@@ -106,7 +106,7 @@ var AddPerson = React.createClass({
   handleLastNameChange: function(e) {
     this.setState({lastName: e.target.value});
   },
-  handleEmailNameChange: function(e) {
+  handleEmailChange: function(e) {
     this.setState({email: e.target.value});
   },
 
@@ -137,7 +137,7 @@ var AddPerson = React.createClass({
                         <FormControl type="text" onChange={this.handleLastNameChange}/>
                     </FormGroup>
                      <FormGroup>
-                        <ControlLabel>Phone number</ControlLabel>
+                        <ControlLabel>Email</ControlLabel>
                         <FormControl type="text" onChange={this.handleEmailChange}/>
                     </FormGroup>
                     <Button bsStyle="success" type="submit">
