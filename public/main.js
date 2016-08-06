@@ -2,6 +2,9 @@ var Modal = ReactBootstrap.Modal;
 var FormGroup = ReactBootstrap.FormGroup;
 var FormControl = ReactBootstrap.FormControl;
 var ControlLabel = ReactBootstrap.ControlLabel;
+var Button = ReactBootstrap.Button;
+var Table = ReactBootstrap.Table;
+var Panel = ReactBootstrap.Panel;
 
 var Title = React.createClass({
   render: function() {
@@ -13,13 +16,172 @@ var Title = React.createClass({
   }
 });
 
+
+var Person = React.createClass({
+  render: function() {
+    return (
+        <tr>
+            <td>{this.props.person.firstName}</td>
+            <td>{this.props.person.lastName}</td>
+            <td>{this.props.person.email}</td>
+            <td><Button bsStyle="danger" bsClass="close" onClick={this.deletePerson} ><span>x</span></Button></td>
+        </tr>
+    );
+  },
+  
+  deletePerson: function() {
+      $.ajax({
+      url:  "/proxy/api/person/" + this.props.person.id,
+      dataType: 'json',
+      type: 'DELETE',
+      success: function(data) {
+        this.props.refreshPeople();
+      }.bind(this),
+      error: function(xhr, status, err) {
+        console.error(this.props.url, status, err.toString());
+      }.bind(this)
+    });
+  }
+});
+
+var PeopleList = React.createClass({
+ getInitialState() {
+    return { people: [] };
+  },
+   componentDidMount: function() {
+    this.loadPeopleFromServer();
+  },
+  
+  loadPeopleFromServer: function() {
+    $.ajax({
+      url:  "/proxy/api/company/" + this.props.company.name + "/people",
+      dataType: 'json',
+      success: function(data) {
+        this.setState({people: data});
+      }.bind(this),
+      error: function(xhr, status, err) {
+        console.error(this.props.url, status, err.toString());
+      }.bind(this)
+    });
+  },
+
+  render: function() {
+    var refreshPeople = this.loadPeopleFromServer;
+    var people = this.state.people.map(function(person) {
+        return (
+            <Person person={person} refreshPeople={refreshPeople}/>
+      );
+    });
+  
+    return (
+        <div>
+            <h4>People</h4>
+            <Table>
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {people}
+                </tbody>
+            </Table>
+            <AddPerson company={this.props.company} refreshPeople={this.loadPeopleFromServer}/>
+      </div>
+    );
+  }
+});
+
+var AddPerson = React.createClass({
+ getInitialState() {
+    return { show: false };
+  },
+  
+  handleFirstNameChange: function(e) {
+    this.setState({firstName: e.target.value});
+  },
+  handleLastNameChange: function(e) {
+    this.setState({lastName: e.target.value});
+  },
+  handleEmailNameChange: function(e) {
+    this.setState({email: e.target.value});
+  },
+
+
+  render: function() {
+    let close = () => this.setState({ showModal: false});
+  
+    return (
+        <div>
+            <Button  bsStyle="success" onClick={() => this.setState({ showModal: true})}>
+                Add Person
+            </Button>
+            
+            <Modal show={this.state.showModal} onHide={close}>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        Add Person
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                <form onSubmit={this.addPerson}>
+                    <FormGroup>
+                        <ControlLabel>First Name</ControlLabel>
+                        <FormControl type="text" onChange={this.handleFirstNameChange}/>
+                    </FormGroup>
+                    <FormGroup>
+                        <ControlLabel>Last Name</ControlLabel>
+                        <FormControl type="text" onChange={this.handleLastNameChange}/>
+                    </FormGroup>
+                     <FormGroup>
+                        <ControlLabel>Phone number</ControlLabel>
+                        <FormControl type="text" onChange={this.handleEmailChange}/>
+                    </FormGroup>
+                    <Button bsStyle="success" type="submit">
+                        Save
+                    </Button>
+                </form>
+                </Modal.Body>
+            </Modal>
+        </div>
+    );
+  },
+  
+  addPerson: function(e) {
+    e.preventDefault();
+    var data = {
+            firstName : this.state.firstName,
+            lastName : this.state.lastName,
+            email : this.state.email,
+            company : this.props.company.name};
+     $.ajax({
+        contentType: "application/json" ,
+        type: 'POST',
+        url: '/proxy/api/person',
+        data: JSON.stringify(data),
+      success: function(data) {
+        this.setState({ showModal: false});
+        this.props.refreshPeople();
+      }.bind(this),
+      error: function(xhr, status, err) {
+        console.error(this.props.url, status, err.toString());
+      }.bind(this)
+    });
+  }
+});
+
 var Company = React.createClass({
   render: function() {
     return (
       <div>
-        <h6>{this.props.company.name}</h6> 
-        Phone number - {this.props.company.phoneNumber}
-        <button onClick={this.deleteCompany}>Delete</button>
+        <Panel header={this.props.company.name}  bsStyle="primary">
+            Phone number - {this.props.company.phoneNumber}
+            <Button bsStyle="danger" bsClass="close" onClick={this.deleteCompany} ><span>x</span></Button>
+            <PeopleList company={this.props.company} />
+        </Panel>
       </div>
     );
   },
@@ -69,6 +231,7 @@ var Companies = React.createClass({
     });
     return (
       <div>
+        <h2>Companies</h2>
         {companyNodes}
         
         <AddCompany refreshCompanies={refreshCompanies}/>
@@ -94,9 +257,9 @@ var AddCompany = React.createClass({
   
     return (
         <div>
-            <button onClick={() => this.setState({ showModal: true})}>
+            <Button bsStyle="success" onClick={() => this.setState({ showModal: true})}>
                 Add Company
-            </button>
+            </Button>
             
             <Modal show={this.state.showModal} onHide={close}>
                 <Modal.Header closeButton>
@@ -114,9 +277,9 @@ var AddCompany = React.createClass({
                         <ControlLabel>Phone number</ControlLabel>
                         <FormControl type="text" onChange={this.handlePhoneNumberChange}/>
                     </FormGroup>
-                    <button type="submit">
+                    <Button bsStyle="success" type="submit">
                         Save
-                    </button>
+                    </Button>
                 </form>
                 </Modal.Body>
             </Modal>
